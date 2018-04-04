@@ -228,22 +228,19 @@ elif [ $LinuxFlavor = 'Red' ] || [ $LinuxFlavor = 'CentOS' ]
 then
         if   [ $LinuxFlavor = 'Red' ]
         then
-                function GetRedHatVersion {
-                        sudo cat /etc/redhat-release | cut -f7 -d' ' | cut -f1 -d'.'
-                }
-                RedHatVersion=$(GetRedHatVersion)
+                CutIndex=7
         elif [ $LinuxFlavor = 'CentOS' ]
         then
-                function GetRedHatVersion {
-                        cat /etc/redhat-release | sed 's/ Linux//' | cut -f1 -d'.' | rev | cut -f1 -d' '
-                }
-                RedHatVersion=$(GetRedHatVersion)
+                CutIndex=4
         fi
-        RHV=$RedHatVersion
+        function GetRedHatVersion {
+                sudo cat /etc/redhat-release | cut -f"$CutIndex" -d' ' | cut -f1 -d'.'
+        }
+        RedHatVersion=$(GetRedHatVersion)
         Release=$RedHatVersion
         LF=$LinuxFlavor
         RL=$Release
-        SubDirName=uekulele
+	SubDirName=uekulele
 elif [ $LinuxFlavor = 'Fedora' ]
 then
         CutIndex=3

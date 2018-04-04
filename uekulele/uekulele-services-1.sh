@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 #    Copyright 2015-2018 Gilbert Standen
 #    This file is part of Orabuntu-LXC.
@@ -184,17 +184,15 @@ elif [ $LinuxFlavor = 'Red' ] || [ $LinuxFlavor = 'CentOS' ]
 then
         if   [ $LinuxFlavor = 'Red' ]
         then
-                function GetRedHatVersion {
-                        sudo cat /etc/redhat-release | cut -f7 -d' ' | cut -f1 -d'.'
-                }
-                RedHatVersion=$(GetRedHatVersion)
+                CutIndex=7
         elif [ $LinuxFlavor = 'CentOS' ]
         then
-                function GetRedHatVersion {
-                        cat /etc/redhat-release | sed 's/ Linux//' | cut -f1 -d'.' | rev | cut -f1 -d' '
-                }
-                RedHatVersion=$(GetRedHatVersion)
+                CutIndex=3
         fi
+        function GetRedHatVersion {
+                sudo cat /etc/redhat-release | cut -f"$CutIndex" -d' ' | cut -f1 -d'.'
+        }
+        RedHatVersion=$(GetRedHatVersion)
 	RHV=$RedHatVersion
         Release=$RedHatVersion
         LF=$LinuxFlavor
@@ -368,12 +366,7 @@ then
 				DestroyContainers=$(CheckContainersExist)
 				for j in $DestroyContainers
 				do
-					if [ $LinuxFlavor = 'CentOS' ] && [ $Release -eq 6 ]
-					then
-						sudo lxc-stop -n $j -k
-					else
-						sudo lxc-stop -n $j
-					fi
+					sudo lxc-stop -n $j
 					sleep 2
 					sudo lxc-destroy -n $j -f -s
 					sudo rm -rf /var/lib/lxc/$j
@@ -527,11 +520,11 @@ then
 	fi
 	sudo yum clean all
 
-	sudo yum -y install wget tar gzip libtool libvirt
+	sudo yum -y install wget tar gzip libtool libvit
 	
 	if [ $Release -eq 6 ]
 	then
-		if [ $LinuxFlavor = 'Oracle' ] || [ $LinuxFlavor = 'CentOS' ]
+		if [ $LinuxFlavor = 'Oracle' ]
 		then
                         sudo yum -y install lxc libcgroup libcap-devel
 	
@@ -620,8 +613,8 @@ then
                                 sudo mkdir -p /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6
                                 sudo chown -R $Owner:$Group /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6
                                 cd /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6
-				wget https://github.com/gstanden/cgroupfs-mount/archive/linux6.zip
-                                unzip linux6.zip
+                                wget https://github.com/gstanden/cgroupfs-mount/archive/master.zip
+                                unzip master.zip
                         fi
 			
 			echo ''
@@ -646,15 +639,11 @@ then
 
                         if [ $CgroupfsInstalled -eq 0 ]
                         then
-                                cd /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6/cgroupfs-mount-linux6
+                                cd /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6/cgroupfs-mount-master
                                 chmod 755 install-linux-6.sh
-				echo ''
                                 ./install-linux-6.sh
                                 sudo service cgroupfs start
-				sudo service cgroupfs status
-			else
-                                sudo service cgroupfs restart
-				sudo service cgroupfs status
+                                sudo service cgroupfs status
                         fi
 			
 			echo ''
@@ -665,23 +654,6 @@ then
 			sleep 5
 
 			clear
-		
-			if [ $LinuxFlavor = 'CentOS' ]
-			then
-				echo ''
-				echo "=============================================="
-				echo "Activate overlayfs (modprobe) ...            "
-				echo "=============================================="
-				echo ''
-
-				sudo modprobe overlay
-				sudo cat /proc/filesystems | grep overlay
-
-				echo ''
-				echo "=============================================="
-				echo "Done: Activate overlayfs (modprobe).          "
-				echo "=============================================="
-			fi
 		fi
 	fi
 
@@ -745,18 +717,14 @@ then
 	cd /opt/olxc/"$DistDir"
 
 	sudo yum -y install debootstrap perl bash-completion bash-completion-extras
-	sudo yum -y install lxc libcap-devel libcgroup wget bridge-utils 
+	sudo yum -y install lxc libcap-devel libcgroup wget bridge-utils lsb
 
-	if   [ $Release -eq 6 ]
-	then
-		if [ $LinuxFlavor != 'CentOS' ]
-		then
-			sudo yum -y install lsb
-		fi
-	elif [ $Release -eq 7 ]
-	then
-		sudo yum -y install lsb
-	fi
+	echo '############### Installing libvirt ! #############################'
+	sleep 5
+	echo ''
+	sudo yum -y install libvirt
+	echo ''
+	echo '############### Installing libvirt ! #############################'
 
 	if [ $LinuxFlavor = 'Fedora' ]
 	then
@@ -874,11 +842,11 @@ then
 	then
 		sudo mv /etc/dnsmasq.conf /etc/dnsmasq.olxc.1
 	fi
-	sudo yum -y install wget tar gzip libtool libvirt
+	sudo yum -y install wget tar gzip libtool
 	
 	if [ $Release -eq 6 ]
 	then
-		if [ $LinuxFlavor = 'Oracle' ] || [ $LinuxFlavor = 'CentOS' ]
+		if [ $LinuxFlavor = 'Oracle' ]
 		then
                         sudo yum -y install lxc libcgroup libcap-devel
 	
@@ -965,8 +933,8 @@ then
                                 sudo mkdir -p /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6
                                 sudo chown -R $Owner:$Group /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6
                                 cd /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6
-				wget https://github.com/gstanden/cgroupfs-mount/archive/linux6.zip
-                                unzip linux6.zip
+                                wget https://github.com/gstanden/cgroupfs-mount/archive/master.zip
+                                unzip master.zip
                         fi
 			
 			echo ''
@@ -991,11 +959,11 @@ then
 
                         if [ $CgroupfsInstalled -eq 0 ]
                         then
-                                cd /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6/cgroupfs-mount-linux6
+                                cd /opt/olxc/"$DistDir"/uekulele/cgroupfs-linux6/cgroupfs-mount-master
                                 chmod 755 install-linux-6.sh
                                 ./install-linux-6.sh
                                 sudo service cgroupfs start
-				sudo service cgroupfs status
+                                sudo service cgroupfs status
                         fi
 			
 			echo ''
@@ -1006,23 +974,6 @@ then
 			sleep 5
 
 			clear
-		
-			if [ $LinuxFlavor = 'CentOS' ]
-			then
-				echo ''
-				echo "=============================================="
-				echo "Activate overlayfs (modprobe) ...            "
-				echo "=============================================="
-				echo ''
-
-				sudo modprobe overlay
-
-				echo ''
-				echo "=============================================="
-				echo "Done: Activate overlayfs (modprobe).          "
-				echo "=============================================="
-				echo ''
-			fi
 		fi
 	fi
 
@@ -1086,7 +1037,7 @@ then
 	cd /opt/olxc/"$DistDir"
 
 	sudo yum -y install debootstrap perl bash-completion bash-completion-extras 
-	sudo yum -y install lxc libcap-devel libcgroup wget bridge-utils
+	sudo yum -y install lxc libcap-devel libcgroup wget bridge-utils lsb
 
 	if [ $LinuxFlavor = 'Fedora' ]
 	then
@@ -1452,7 +1403,7 @@ then
 
  	sleep 5
 
-	sudo ifconfig virbr0
+	sudo ifconfig virbr0 > /dev/null 2>&1
 	if [ $? -eq 0 ]
 	then
 		sudo sed -i "s/lxcbr0/virbr0/g" /etc/lxc/default.conf
@@ -1503,6 +1454,7 @@ echo "=============================================="
 echo ''
 
 sudo service libvirtd start > /dev/null 2>&1
+echo ''
 sleep 5
 sudo ifconfig virbr0
 if [ $? -eq 0 ]
@@ -1541,13 +1493,7 @@ sudo yum -y install openssh-server uuid sshpass
 sudo yum -y install rpm ntp iotop
 sudo yum -y install iptables gawk yum-utils
 
-if   [ $Release -eq 6 ]
-then
-	if [ $LinuxFlavor != 'CentOS' ]
-	then
-		sudo yum -y install lsb
-	fi
-elif [ $Release -eq 7 ]
+if [ $LinuxFlavor = 'Fedora' ] || [ $LinuxFlavor = 'Red' ] || [ $LinuxFlavor = 'Oracle' ]
 then
 	sudo yum -y install lsb
 fi
@@ -1720,12 +1666,7 @@ then
 
 			if   [ $LinuxFlavor = 'CentOS' ]
 			then
-				sudo yum -y install yum-utils
-				sudo yum -y install scl-utils
 				sudo yum -y install centos-release-scl
-				sudo yum-config-manager --enable rhel-server-rhscl-7-rpms
-				sudo yum -y install python27
-				source /opt/rh/python27/enable
 
 			elif [ $LinuxFlavor = 'Oracle' ]
 			then
@@ -1757,7 +1698,7 @@ then
 			wget --timeout=5 --tries=10 http://openvswitch.org/releases/openvswitch-"$OvsVersion".tar.gz
 			mkdir -p /opt/olxc/"$DistDir"/uekulele/openvswitch/rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 			cp -p openvswitch-"$OvsVersion".tar.gz /opt/olxc/"$DistDir"/uekulele/openvswitch/rpmbuild/SOURCES/.
- 			tar -xzf openvswitch-"$OvsVersion".tar.gz
+ 			tar -xzvf openvswitch-"$OvsVersion".tar.gz
 
 			echo ''
 			echo "=============================================="
@@ -2180,14 +2121,12 @@ then
 	echo "=============================================="
 
 	echo ''
-	sudo touch /var/lib/lxc/nsa/rootfs/etc/resolv.conf > /dev/null 2>&1
-	sudo sed -i '0,/.*nameserver.*/s/.*nameserver.*/nameserver 8.8.8.8\n&/' /var/lib/lxc/nsa/rootfs/etc/resolv.conf > /dev/null 2>&1
-	
+	sudo touch /var/lib/lxc/nsa/rootfs/etc/resolv.conf
+	sudo sed -i '0,/.*nameserver.*/s/.*nameserver.*/nameserver 8.8.8.8\n&/' /var/lib/lxc/nsa/rootfs/etc/resolv.conf
 	sudo lxc-start -n nsa
-
 	echo ''
 
-	sleep 10
+	sleep 5 
 
 	clear
 
@@ -2275,13 +2214,7 @@ then
 	echo "=============================================="
 	echo ''
 
-	if [ $LinuxFlavor = 'CentOS' ] && [ $Release -eq 6 ]
-	then
-		sudo lxc-stop -n nsa -k
-	else
-		sudo lxc-stop -n nsa
-	fi
-
+	sudo lxc-stop -n nsa
 	sudo lxc-info -n nsa
 
 	echo ''
@@ -3071,8 +3004,6 @@ then
  			sudo service sx1 restart
 		fi
 
-		sudo yum -y install xfsprogs xfsdump xfsprogs-devel xfsprogs-qa-devel
-
 	        function CheckFileSystemTypeXfs {
 			stat --file-system --format=%T /var/lib/lxc | grep -c xfs
        		}
@@ -3083,16 +3014,6 @@ then
        		}
         	FileSystemTypeExt=$(CheckFileSystemTypeExt)
 
-	        function CheckFileSystemTypeBtrfs {
-			stat --file-system --format=%T /var/lib/lxc | grep -c btrfs
-       		}
-        	FileSystemTypeBtrfs=$(CheckFileSystemTypeBtrfs)
-
-		function GetNameServerBase {
-			echo $NameServer | cut -f1 -d'-'
-		}
-		NameServerBase=$(GetNameServerBase)
-
 		if [ $FileSystemTypeXfs -eq 1 ]
 		then
         		function GetFtype {
@@ -3102,15 +3023,15 @@ then
 
 			if   [ $Ftype -eq 0 ]
 			then
-				sudo lxc-stop -n $NameServer > /dev/null 2>&1
- 				sudo lxc-copy -n $NameServer -N $NameServerBase
+				sudo lxc-stop  -n $NameServer > /dev/null 2>&1
+ 				sudo lxc-copy  -n $NameServer -N $NameServerBase
 				NameServer=$NameServerBase
 				sudo lxc-start -n $NameServer
 
 			elif [ $Ftype -eq 1 ]
 			then
-	                	sudo lxc-stop -n $NameServer > /dev/null 2>&1
-				sudo lxc-copy -n $NameServer -N $NameServerBase -B overlayfs -s
+	                	sudo lxc-stop  -n $NameServer > /dev/null 2>&1
+				sudo lxc-copy  -n $NameServer -N $NameServerBase -B overlayfs -s
 				NameServer=$NameServerBase
 				sudo lxc-start -n $NameServer
 			fi
@@ -3118,45 +3039,12 @@ then
 
 		if [ $FileSystemTypeExt -eq 1 ]
 		then
-			if [ $LinuxFlavor = 'CentOS' ]
-			then
-				if   [ $Release -ge 7 ]
-				then
-					sudo lxc-stop -n $NameServer > /dev/null 2>&1
-					sudo lxc-copy -n $NameServer -N $NameServerBase -B overlayfs -s
-					NameServer=$NameServerBase
-					sudo lxc-start -n $NameServer
-
-				elif [ $Release -eq 6 ]
-				then
-					sudo lxc-stop -n $NameServer > /dev/null 2>&1
-					sudo lxc-copy -n $NameServer -N $NameServerBase -B overlayfs -s
-				#	sudo lxc-copy -n $NameServer -n afns1
-					NameServer=$NameServerBase
-					sudo lxc-start -n $NameServer
-				fi
-			else
-				sudo lxc-stop -n $NameServer > /dev/null 2>&1
-				sudo lxc-copy -n $NameServer -N $NameServerBase -B overlayfs -s
-				NameServer=$NameServerBase
-				sudo lxc-start -n $NameServer
-			fi
-		fi
-		
-		if [ $FileSystemTypeBtrfs -eq 1 ]
-		then
+			sudo lxc-stop  -n $NameServer > /dev/null 2>&1
 			sudo lxc-copy  -n $NameServer -N $NameServerBase -B overlayfs -s
- 		#	sudo lxc-copy  -n $NameServer -N $NameServerBase
-		#	sudo lxc-copy  -n $NameServer -n afns1
-			sleep 5
 			NameServer=$NameServerBase
 			sudo lxc-start -n $NameServer
 		fi
 	fi
-
-	sleep 5
-
-	clear
 
 	if [ $Release -ge 7 ]
 	then
@@ -3195,7 +3083,6 @@ then
 			echo "Created $NameServer Onboot Service.           "
 			echo "=============================================="
 		fi
-
 	elif [ $Release -eq 6 ]
 	then
 		if [ ! -f /etc/init.d/lxc_$NameServer ]
@@ -3448,7 +3335,7 @@ then
 	clear
 
 	sudo lxc-attach -n $NameServer -- mkdir -p /root/backup-lxc-container/$NameServer/updates
-	sudo lxc-attach -n $NameServer -- tar -czPf /root/backup-lxc-container/$NameServer/updates/backup_"$NameServer"_ns_update.tar.gz /root/ns_backup_update.lst
+	sudo lxc-attach -n $NameServer -- tar -cvzPf /root/backup-lxc-container/$NameServer/updates/backup_"$NameServer"_ns_update.tar.gz /root/ns_backup_update.lst
 
 	echo ''
 	echo "=============================================="

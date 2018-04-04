@@ -162,17 +162,15 @@ elif [ $LinuxFlavor = 'Red' ] || [ $LinuxFlavor = 'CentOS' ]
 then
         if   [ $LinuxFlavor = 'Red' ]
         then
-		function GetRedHatVersion {
-                	sudo cat /etc/redhat-release | cut -f7 -d' ' | cut -f1 -d'.'
-        	}
-        	RedHatVersion=$(GetRedHatVersion)
+                CutIndex=7
         elif [ $LinuxFlavor = 'CentOS' ]
         then
-                function GetRedHatVersion {
-                        cat /etc/redhat-release | sed 's/ Linux//' | cut -f1 -d'.' | rev | cut -f1 -d' '
-                }
-        	RedHatVersion=$(GetRedHatVersion)
+                CutIndex=4
         fi
+        function GetRedHatVersion {
+                sudo cat /etc/redhat-release | cut -f"$CutIndex" -d' ' | cut -f1 -d'.'
+        }
+        RedHatVersion=$(GetRedHatVersion)
 	RHV=$RedHatVersion
         Release=$RedHatVersion
         LF=$LinuxFlavor
@@ -208,6 +206,16 @@ then
         UbuntuMajorVersion=$(GetUbuntuMajorVersion)
 fi
 
+if [ $Release -ge 7 ]
+then
+	function CheckLxcNetRunning {
+		sudo systemctl | grep lxc-net | grep 'loaded active exited' | wc -l
+	}
+	LxcNetRunning=$(CheckLxcNetRunning)
+else
+	LxcNetRunning=0
+fi
+
 echo ''
 echo "=============================================="
 echo "Script: uekulele-services-5.sh                "
@@ -230,26 +238,26 @@ if [ $MultiHostVar1 = 'new' ]
 then
 	echo ''
 	echo "=============================================="
-  	echo "Install Docker...                             "
-  	echo "=============================================="
-  	echo ''
+	echo "Install Docker...                             "
+	echo "=============================================="
+	echo ''
+	
+	sleep 5
+	
+	if [ $Release -eq 7 ]
+	then
+		sudo chmod 775 /opt/olxc/"$DistDir"/uekulele/archives/docker_install_uekulele.sh
+		/opt/olxc/"$DistDir"/uekulele/archives/docker_install_uekulele.sh
+	fi
+	
+	echo ''
+	echo "=============================================="
+	echo "Done: Install Docker.                         "
+	echo "=============================================="
 
-  	sleep 5
+	sleep 5
 	
-  	if [ $Release -ge 6 ]
-  	then
-  		sudo chmod 775 /opt/olxc/"$DistDir"/uekulele/archives/docker_install_uekulele.sh
-  		/opt/olxc/"$DistDir"/uekulele/archives/docker_install_uekulele.sh $LinuxFlavor $Release
-  	fi
-	
-  	echo ''
-  	echo "=============================================="
-  	echo "Done: Install Docker.                         "
-  	echo "=============================================="
-
- 	sleep 5
-	
- 	clear
+	clear
 fi
 
 if [ $MultiHostVar1 = 'new' ] || [ $MultiHostVar1 = 'reinstall' ]
@@ -328,8 +336,6 @@ then
 				sudo chkconfig --add ovs_$k
 				sudo chkconfig ovs_$k on --level 345
 				sudo chkconfig --list ovs_$k
-			else
-				sudo chkconfig --list ovs_$k
 			fi
 
 		        echo ''
@@ -366,6 +372,14 @@ fi
 if [ $Release -ge 7 ]
 then
 	sudo systemctl daemon-reload
+fi
+
+if [ $LinuxFlavor != 'Fedora' ] && [ $LinuxFlavor != 'CentOS' ] && [ $LinuxFlavor != 'Red' ]
+then
+	sudo service lxc-net restart > /dev/null 2>&1
+else
+	sudo sed -i '/cache-size=150/s/cache-size=150/cache-size=0/g' /etc/dnsmasq.conf
+	sudo service dnsmasq restart > /dev/null 2>&1
 fi
 
 # sshpass -p $MultiHostVar9 ssh -qt -o CheckHostIP=no -o StrictHostKeyChecking=no $MultiHostVar8@$MultiHostVar5 "sudo -S <<< "$MultiHostVar9" service lxc-net restart > /dev/null 2>&1"
@@ -421,7 +435,7 @@ do
 		SeedPostfix=$(GetSeedPostfix)
 		if [ $i -eq 5 ]
 		then
-                        sudo lxc-stop -n $j -k > /dev/null 2>&1
+			sudo lxc-stop -n $j
 			sleep 2
                         echo ''
                         echo 'Attempting OpenvSwitch veth pair cleanup procedures...'
@@ -488,6 +502,51 @@ then
         sleep 5
 
         clear
+
+elif [ $LxcNetRunning -ge 1 ] 
+then
+        echo ''
+        echo "=============================================="
+        echo "Restart Resolution Services...                "
+        echo "=============================================="
+        echo ''
+
+	if [ $LinuxFlavor != 'Fedora' ] && [ $LinuxFlavor != 'CentOS' ] && [ $LinuxFlavor != 'Red' ]
+	then
+		function GetDhcpRange {
+       	 		cat /etc/sysconfig/lxc-net | grep LXC_DHCP_RANGE | cut -f2 -d'=' | sed 's/"//g' 
+		}       
+		DhcpRange=$(GetDhcpRange)
+		DHR="$DhcpRange"
+		sudo sed -i "s/DHCP-RANGE-OLXC/dhcp-range=$DHR/" /etc/dnsmasq.conf
+		if [ $Release -ge 7 ]
+		then
+			sudo systemctl daemon-reload
+		fi
+        	sudo service lxc-net restart > /dev/null 2>&1
+		sleep 2
+        	sudo service lxc-net status
+	else
+		if [ $Release -ge 7 ]
+		then
+			sudo systemctl daemon-reload
+		fi
+		sudo service dnsmasq restart > /dev/null 2>&1
+		sleep 2
+		sudo service dnsmasq status
+	fi
+
+        sleep 2
+
+        echo ''
+        echo "=============================================="
+        echo "Done: Restart Resolution Services.            "
+        echo "=============================================="
+        echo ''
+
+        sleep 5
+
+        clear
 fi
 
 for j in $ClonedContainersExist
@@ -521,7 +580,7 @@ then
 	echo ''
 
         sudo touch /etc/orabuntu-lxc-release
-        sudo sh -c "echo 'Orabuntu-LXC v6.10.7-beta AMIDE' > /etc/orabuntu-lxc-release"
+        sudo sh -c "echo 'Orabuntu-LXC v6.10-beta AMIDE' > /etc/orabuntu-lxc-release"
 	sudo ls -l /etc/orabuntu-lxc-release
 	echo ''
 	sudo cat /etc/orabuntu-lxc-release
@@ -718,6 +777,51 @@ then
 	        sleep 5
 	
 	        clear
+
+	elif [ $LxcNetRunning -ge 1 ]
+	then
+		echo ''
+		echo "=============================================="
+		echo "Restart Resolution Services...                "
+		echo "=============================================="
+		echo ''
+
+		if [ $LinuxFlavor != 'Fedora' ] && [ $LinuxFlavor != 'CentOS' ] && [ $LinuxFlavor != 'Red' ]
+		then
+			function GetDhcpRange {
+				cat /etc/sysconfig/lxc-net | grep LXC_DHCP_RANGE | cut -f2 -d'=' | sed 's/"//g' 
+			}       
+			DhcpRange=$(GetDhcpRange)
+			DHR="$DhcpRange"
+			sudo sed -i "s/DHCP-RANGE-OLXC/dhcp-range=$DHR/" /etc/dnsmasq.conf
+			if [ $Release -ge 7 ]
+			then
+				sudo systemctl daemon-reload
+			fi
+			sudo service lxc-net restart > /dev/null 2>&1
+			sleep 2
+			sudo service lxc-net status
+		else
+			if [ $Release -ge 7 ]
+			then
+				sudo systemctl daemon-reload
+			fi
+			sudo service dnsmasq restart > /dev/null 2>&1
+			sleep 2
+			sudo service dnsmasq status
+		fi
+
+		sleep 2
+
+		echo ''
+		echo "=============================================="
+		echo "Done: Restart Resolution Services.            "
+		echo "=============================================="
+		echo ''
+
+		sleep 5
+
+		clear
 	fi
 	
 	echo ''
@@ -764,9 +868,7 @@ then
 		echo "Replicate nameserver $NameServer...           "
 		echo "=============================================="
 		echo ''
-
-		# new
-
+	
                 function CheckFileSystemTypeXfs {
                         stat --file-system --format=%T /var/lib/lxc | grep -c xfs
                 }
@@ -777,11 +879,6 @@ then
                 }
                 FileSystemTypeExt=$(CheckFileSystemTypeExt)
 
-                function CheckFileSystemTypeBtrfs {
-                        stat --file-system --format=%T /var/lib/lxc | grep -c btrfs
-                }
-                FileSystemTypeBtrfs=$(CheckFileSystemTypeBtrfs)
-
                 if [ $FileSystemTypeXfs -eq 1 ]
                 then
                         function GetFtype {
@@ -789,70 +886,28 @@ then
                         }
                         Ftype=$(GetFtype)
 
-                        if [ $Ftype -eq 1 ]
+                        if   [ $Ftype -eq 1 ]
                         then
-                                sudo lxc-stop  -n $NameServer > /dev/null 2>&1
-
-				if [ $Release -ge 7 ]
-				then
-                                	echo 'hub nameserver post-install snapshot' > snap-comment
-                                	sudo lxc-snapshot -n $NameServer -c snap-comment
-                                	sudo rm -f snap-comment
-                                	sudo lxc-snapshot -n $NameServer -L -C
-                                	sleep 5
-				fi
+                                sudo lxc-stop -n $NameServer
+                                echo 'hub nameserver post-install snapshot' > snap-comment
+                                sudo lxc-snapshot -n $NameServer -c snap-comment
+                                sudo rm -f snap-comment
+                                sudo lxc-snapshot -n $NameServer -L -C
+                                sleep 5
                         fi
                 fi
 
                 if [ $FileSystemTypeExt -eq 1 ]
                 then
-                	sudo lxc-stop -n $NameServer    > /dev/null 2>&1
-
-                        if [ $LinuxFlavor = 'CentOS' ]
-                        then
-                                if   [ $Release -ge 7 ]
-                                then
-					sudo lxc-stop -n $NameServer
-                        		echo 'HUB nameserver post-install snapshot' > snap-comment
-                        		sudo lxc-snapshot -n $NameServer -c snap-comment
-                        		sudo rm -f snap-comment
-                        		sudo lxc-snapshot -n $NameServer -L -C
-					sudo lxc-start -n $NameServer
-
-                                elif [ $Release -eq 6 ]
-				then
-					echo ''
-					echo "=============================================="
-					echo "LXC snapshot not supported on this fs/kernel. "
-					echo "=============================================="
-                                fi
-			fi
+                        sudo lxc-stop -n $NameServer
+                        echo 'hub nameserver post-install snapshot' > snap-comment
+                        sudo lxc-snapshot -n $NameServer -c snap-comment
+                        sudo rm -f snap-comment
+                        sudo lxc-snapshot -n $NameServer -L -C
+                        sleep 5
                 fi
 
-                if [ $FileSystemTypeBtrfs -eq 1 ]
-                then
-			if [ $LinuxFlavor = 'CentOS' ]
-			then
-				if [ $Release -eq 7 ]
-				then
-					sudo lxc-stop -n $NameServer
-                       			echo 'HUB nameserver post-install snapshot' > snap-comment
-                       			sudo lxc-snapshot -n $NameServer -c snap-comment
-                       			sudo rm -f snap-comment
-                       			sudo lxc-snapshot -n $NameServer -L -C
-					sudo lxc-start -n $NameServer
-
-				elif [ $Release -eq 6 ]
-				then
-					echo ''
-					echo "=============================================="
-					echo "LXC snapshot not supported on this fs/kernel. "
-					echo "=============================================="
-				fi
-			fi
-                fi
-                
-		if [ ! -e ~/Manage-Orabuntu ]
+                if [ ! -e ~/Manage-Orabuntu ]
                 then
                         sudo mkdir -p ~/Manage-Orabuntu
                 fi
@@ -861,7 +916,7 @@ then
                 echo "/var/lib/lxc/$NameServer-base"    >> /opt/olxc/"$DistDir"/uekulele/archives/nameserver.lst
 		sudo tar -P -czf $HOME/Manage-Orabuntu/$NameServer.tar.gz -T /opt/olxc/"$DistDir"/uekulele/archives/nameserver.lst --checkpoint=10000 --totals
 		sudo lxc-start -n $NameServer > /dev/null 2>&1
-
+		
 		echo ''
 		echo "=============================================="
 		echo "Done: Replicate nameserver $NameServer.       "
@@ -908,6 +963,49 @@ then
 	        	echo ''
 	
 	        	sleep 5
+	
+		elif [ $LxcNetRunning -ge 1 ]
+		then
+			echo ''
+			echo "=============================================="
+			echo "Restart Resolution Services...                "
+			echo "=============================================="
+			echo ''
+
+			if [ $LinuxFlavor != 'Fedora' ] && [ $LinuxFlavor != 'CentOS' ] && [ $LinuxFlavor != 'Red' ]
+			then
+				function GetDhcpRange {
+					cat /etc/sysconfig/lxc-net | grep LXC_DHCP_RANGE | cut -f2 -d'=' | sed 's/"//g' 
+				}       
+				DhcpRange=$(GetDhcpRange)
+				DHR="$DhcpRange"
+				sudo sed -i "s/DHCP-RANGE-OLXC/dhcp-range=$DHR/" /etc/dnsmasq.conf
+				if [ $Release -ge 7 ]
+				then
+					sudo systemctl daemon-reload
+				fi
+				sudo service lxc-net restart > /dev/null 2>&1
+				sleep 2
+				sudo service lxc-net status
+			else
+				if [ $Release -ge 7 ]
+				then
+					sudo systemctl daemon-reload
+				fi
+				sudo service dnsmasq restart > /dev/null 2>&1
+				sleep 2
+				sudo service dnsmasq status
+			fi
+
+			sleep 2
+
+			echo ''
+			echo "=============================================="
+			echo "Done: Restart Resolution Services.            "
+			echo "=============================================="
+			echo ''
+
+			sleep 5
 		fi
                 
                 echo ''
@@ -1134,7 +1232,7 @@ then
 	echo "=============================================="
 	echo "Note that deployment management links are in: "
 	echo "                                              "
-	echo "     $HOME/Manage-Orabuntu                    "
+	echo "     $HOME/Manage-Orabuntu                        "
 	echo "                                              "
 	echo "Learn and manage Orabuntu-LXC configurations  "
 	echo "from that directory of pointers.              "
@@ -1157,10 +1255,10 @@ fi
 # Set permissions on scst-files and cleanup staging area
 
 sudo rm -f /opt/olxc/*.lst /opt/olxc/*.tar
-# if [ $Owner != 'ubuntu' ]
-# then
-# 	sudo rm -r /opt/olxc/home/ubuntu
-# fi
+if [ $Owner != 'ubuntu' ]
+then
+	sudo rm -r /opt/olxc/home/ubuntu
+fi
 
 cd "$DistDir"/uekulele/archives
 rm -f uekulele-services.lst uekulele-files.lst product.lst uekulele-services.tar uekulele-files.tar product.tar
@@ -1176,5 +1274,4 @@ if [ $LinuxFlavor = 'Fedora' ]
 then
 	sudo sh -c "echo 'exclude=openvswitch*' >> /etc/dnf/dnf.conf"
 fi
-sudo rm -f  /etc/sudoers.d/orabuntu-lxc
-sudo rm -rf /opt/olxc/opt 
+sudo rm -f /etc/sudoers.d/orabuntu-lxc
