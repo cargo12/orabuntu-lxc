@@ -2250,7 +2250,9 @@ then
 
 	# GLS 20180411 Create the tar.gz of the source nameserver dynamically so that GRE hosts pick up all post-install nameserver configuration changes.
 
-	sshpass -p $MultiHostVar9 ssh -t -o CheckHostIP=no -o StrictHostKeyChecking=no $MultiHostVar8@$MultiHostVar5 "sudo -S <<< "$MultiHostVar9" echo '(Do NOT enter passwords...Wait...)'; echo ''; sudo -S <<< "$MultiHostVar9" lxc-stop -n $NameServerBase -k; sudo -S <<< "$MultiHostVar9" cat /home/orabuntu/.ssh/authorized_keys | cut -f3 -d' ' | cut -f2 -d'@' >> /var/lib/lxc/afns1/delta0/root/gre_hosts.txt; sudo -S <<< "$MultiHostVar9" cat /var/lib/lxc/afns1/delta0/root/gre_hosts.txt | sort -u > /var/lib/lxc/afns1/delta0/root/gre_hosts.tmp; sudo -S <<< "$MultiHostVar9" mv /var/lib/lxc/afns1/delta0/root/gre_hosts.tmp /var/lib/lxc/afns1/delta0/root/gre_hosts.txt; sudo -S <<< "$MultiHostVar9" tar -P -czf ~/Manage-Orabuntu/"$NameServerBase".export."$HOSTNAME".tar.gz -T ~/Manage-Orabuntu/nameserver.lst --checkpoint=10000 --totals; sleep 2; sudo -S <<< "$MultiHostVar9" lxc-start -n $NameServerBase"
+	sshpass -p $MultiHostVar9 ssh -t -o CheckHostIP=no -o StrictHostKeyChecking=no $MultiHostVar8@$MultiHostVar5 "sudo -S <<< "$MultiHostVar9" echo '(Do NOT enter passwords...Wait...)'; echo ''; sudo -S <<< "$MultiHostVar9" lxc-stop -n $NameServerBase -k; sudo -S <<< "$MultiHostVar9" tar -P -czf ~/Manage-Orabuntu/"$NameServerBase".export."$HOSTNAME".tar.gz -T ~/Manage-Orabuntu/nameserver.lst --checkpoint=10000 --totals; sleep 2; sudo -S <<< "$MultiHostVar9" lxc-start -n $NameServerBase"
+
+#	sshpass -p $MultiHostVar9 ssh -t -o CheckHostIP=no -o StrictHostKeyChecking=no $MultiHostVar8@$MultiHostVar5 "sudo -S <<< "$MultiHostVar9" echo '(Do NOT enter passwords...Wait...)'; echo ''; sudo -S <<< "$MultiHostVar9" lxc-stop -n $NameServerBase -k; sudo -S <<< "$MultiHostVar9" cat /home/orabuntu/.ssh/authorized_keys | cut -f3 -d' ' | cut -f2 -d'@' >> /var/lib/lxc/afns1/delta0/root/gre_hosts.txt; sudo -S <<< "$MultiHostVar9" cat /var/lib/lxc/afns1/delta0/root/gre_hosts.txt | sort -u > /var/lib/lxc/afns1/delta0/root/gre_hosts.tmp; sudo -S <<< "$MultiHostVar9" mv /var/lib/lxc/afns1/delta0/root/gre_hosts.tmp /var/lib/lxc/afns1/delta0/root/gre_hosts.txt; sudo -S <<< "$MultiHostVar9" tar -P -czf ~/Manage-Orabuntu/"$NameServerBase".export."$HOSTNAME".tar.gz -T ~/Manage-Orabuntu/nameserver.lst --checkpoint=10000 --totals; sleep 2; sudo -S <<< "$MultiHostVar9" lxc-start -n $NameServerBase"
 
         /opt/olxc/"$DistDir"/orabuntu/archives/nameserver_copy.sh $MultiHostVar5 $MultiHostVar6 $MultiHostVar8 $MultiHostVar9 $NameServerBase
 
@@ -2403,15 +2405,57 @@ then
  	sudo useradd -m -p $(openssl passwd -1 ${PASSWORD}) -s /bin/bash ${USERNAME}
 	sudo mkdir -p  /home/${USERNAME}/Downloads /home/${USERNAME}/Manage-Orabuntu
 	sudo chown ${USERNAME}:${USERNAME} /home/${USERNAME}/Downloads /home/${USERNAME}/Manage-Orabuntu
+
+        echo ''
+        echo "=============================================="
+        echo "Create amide user RSA key...                  "
+        echo "=============================================="
+        echo ''
+
 	sudo runuser -l amide -c "ssh-keygen -f /home/amide/.ssh/id_rsa -t rsa -N ''"
+
+        echo ''
+        echo "=============================================="
+        echo "Done: Create amide user RSA key.              "
+        echo "=============================================="
+
+        sleep 5
+
+        clear
 
 	sudo sh -c "echo 'amide ALL=/bin/mkdir, /bin/cp' > /etc/sudoers.d/amide"
 	sudo chmod 0440 /etc/sudoers.d/amide
 
 	sudo lxc-attach -n $NameServer -- crontab /root/crontab.txt
-	sudo lxc-attach -n $NameServer -- crontab -l
+
+        echo ''
+        echo "=============================================="
+        echo "Display $NameServer replica cronjob...        "
+        echo "=============================================="
+        echo ''
+
+	sudo lxc-attach -n $NameServer -- crontab -l | tail -23
+
+        echo ''
+        echo "=============================================="
+        echo "Done: Display $NameServer replica cronjob.    "
+        echo "=============================================="
+        echo ''
+
+	sleep 5
+
+	clear
+
 	sudo lxc-attach -n $NameServer -- mkdir -p /root/backup-lxc-container/$NameServer/updates
+	sudo lxc-attach -n $NameServer -- touch /root/gre_hosts.txt
+	sudo lxc-attach -n $NameServer -- touch /home/ubuntu/gre_hosts.txt
 	sudo lxc-attach -n $NameServer -- tar -cvzPf /root/backup-lxc-container/$NameServer/updates/backup_"$NameServer"_ns_update.tar.gz -T /root/ns_backup_update.lst
+
+        echo ''
+        echo "=============================================="
+        echo "Extract DNS sync service files ...            "
+        echo "=============================================="
+        echo ''
  
         sudo tar -v --extract --file=/opt/olxc/"$DistDir"/orabuntu/archives/dns-dhcp-cont.tar -C / var/lib/lxc/nsa/rootfs/etc/systemd/system/dns-sync.service
         sudo tar -v --extract --file=/opt/olxc/"$DistDir"/orabuntu/archives/dns-dhcp-cont.tar -C / var/lib/lxc/nsa/rootfs/etc/systemd/system/dns-thaw.service
@@ -2426,7 +2470,33 @@ then
         sudo lxc-attach -n $NameServer -- chown bind:bind /var/lib/bind/rev.$Domain2
         sudo lxc-attach -n $NameServer -- chown root:bind /var/lib/bind
         sudo lxc-attach -n $NameServer -- chmod 775 /var/lib/bind
+
+        echo ''
+        echo "=============================================="
+        echo "Done: Extract DNS sync service files.         "
+        echo "=============================================="
+
+        sleep 5
+
+        clear
+
+        echo ''
+        echo "=============================================="
+        echo "Create $NameServer RSA key...                 "
+        echo "=============================================="
+        echo ''
+
 	sudo lxc-attach -n $NameServer -- ssh-keygen -f /root/.ssh/id_rsa -t rsa -N ''
+
+        echo ''
+        echo "=============================================="
+        echo "Done: Create $NameServer RSA key.             "
+        echo "=============================================="
+        echo ''
+
+        sleep 5
+
+        clear
 
 	sudo sh -c "cat '/var/lib/lxc/$NameServerBase/delta0/root/.ssh/id_rsa.pub' >> /home/amide/.ssh/authorized_keys"
 

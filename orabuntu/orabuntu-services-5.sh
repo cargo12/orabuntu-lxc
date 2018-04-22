@@ -48,6 +48,8 @@ then
         	cat /sys/hypervisor/uuid | cut -c1-3 | grep -c ec2
 	}
 	AWS=$(CheckAWS)
+else
+	AWS=0
 fi
 
 function GetGroup {
