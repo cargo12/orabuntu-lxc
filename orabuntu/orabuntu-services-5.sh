@@ -787,6 +787,7 @@ then
                 sudo tar -P -czf ~/Manage-Orabuntu/$NameServer.tar.gz -T /opt/olxc/"$DistDir"/orabuntu/archives/nameserver.lst --checkpoint=10000 --totals
                 sudo lxc-start -n $NameServer > /dev/null 2>&1
 
+		echo ''
                 echo "=============================================="
                 echo "Configure replica nameserver $NameServer...   "
                 echo "=============================================="
