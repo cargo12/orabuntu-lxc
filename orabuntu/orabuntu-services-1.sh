@@ -489,7 +489,7 @@ then
 		AptProcessRunning=$(CheckAptProcessRunning)
 	done
 
-	sudo apt-get -y install lxc facter iptables
+	sudo apt-get -y install lxc facter iptables lxc-templates
 
 	echo ''
 	echo "=============================================="
@@ -674,8 +674,9 @@ echo ''
 sleep 5
 
 sudo apt-get install -y uml-utilities openvswitch-switch openvswitch-common hugepages ntp
-sudo apt-get install -y bind9utils dnsutils apparmor-utils openssh-server uuid rpm yum
+sudo apt-get install -y bind9utils dnsutils apparmor-utils openssh-server uuid rpm yum lxc-templates
 sudo apt-get install -y iotop sshpass facter iptables xfsprogs
+sudo apt-get install -y ruby
 
 if [ $NetworkManagerInstalled -eq 1 ] && [ $SystemdResolvedInstalled -eq 0 ]
 then
@@ -1961,7 +1962,9 @@ sleep 5
 
 clear
 
-if   [ $SystemdResolvedInstalled -eq 1 ] && [ $NetworkManagerInstalled -eq 1 ] && [ $UbuntuVersion != '16.04' ]
+# if   [ $SystemdResolvedInstalled -eq 1 ] && [ $NetworkManagerInstalled -eq 1 ] && [ $UbuntuVersion != '16.04' ]
+
+if   [ $SystemdResolvedInstalled -eq 1 ]
 then
 	echo ''
 	echo "=============================================="
