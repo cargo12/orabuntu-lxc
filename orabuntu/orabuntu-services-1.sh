@@ -47,7 +47,7 @@ Sw1Net=${10}
 RSA=Y
 
 function CheckFacterValue {
-	facter virtual
+	facter virtual --log-level=none
 }
 FacterValue=$(CheckFacterValue)
 

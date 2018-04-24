@@ -381,6 +381,7 @@ then
 			echo "RedHat Linux 7.x	ALL       V,P 	ALL,AWS     "
 			echo "Ubuntu Linux 16.x	ALL       V,P 	S,D,AWS     "
 			echo "Ubuntu Linux 17.x	ALL       V,P 	S,D         "
+			echo "Ubuntu Linux 18.x	ALL       V,P 	S,D         "
 			echo "Pop_OS Linux 17.x	ALL       V,P 	ALL         "
 			echo "                                              "
 			echo "Legend:                                       "
@@ -501,7 +502,7 @@ then
 			fi # OK 5
 
 			function GetFacter {
-				facter virtual
+				facter virtual --log-level=none
 			}
 			Facter=$(GetFacter)
 			
@@ -776,6 +777,7 @@ then
 			echo "RedHat Linux 7.x	ALL       V,P 	ALL,AWS     "
 			echo "Ubuntu Linux 16.x	ALL       V,P 	S,D,AWS     "
 			echo "Ubuntu Linux 17.x	ALL       V,P 	S,D         "
+			echo "Ubuntu Linux 18.x	ALL       V,P 	S,D         "
 			echo "Pop_OS Linux 17.x	ALL       V,P 	ALL         "
 			echo "                                              "
 			echo "Legend:                                       "
@@ -879,7 +881,7 @@ then
 			fi # OK 5
 	
 			function GetFacter {
-				facter virtual
+				facter virtual --log-level=none
 			}
 			Facter=$(GetFacter)
 
