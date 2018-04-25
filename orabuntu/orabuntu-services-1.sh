@@ -46,11 +46,6 @@ Sw1Net=${10}
 
 RSA=Y
 
-function CheckFacterValue {
-	facter virtual --log-level=none
-}
-FacterValue=$(CheckFacterValue)
-
 if [ -e /sys/hypervisor/uuid ]
 then
         function CheckAWS {
@@ -195,6 +190,19 @@ function CheckAptProcessRunning {
 	ps -ef | grep -v '_apt' | grep apt | grep -v grep | wc -l
 }
 AptProcessRunning=$(CheckAptProcessRunning)
+
+if [ $UbuntuMajorVersion -ge 18 ]
+then
+        function GetFacter {
+                facter virtual --log-level=none
+        }
+        Facter=$(GetFacter)
+else
+        function GetFacter {
+                facter virtual
+        }
+        Facter=$(GetFacter)
+fi
 
 sleep 5
 

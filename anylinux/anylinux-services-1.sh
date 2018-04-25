@@ -502,7 +502,7 @@ then
 			fi # OK 5
 
 			function GetFacter {
-				facter virtual --log-level=none
+				facter virtual
 			}
 			Facter=$(GetFacter)
 			
@@ -880,11 +880,19 @@ then
 				clear
 
 			fi # OK 5
-	
-			function GetFacter {
-				facter virtual --log-level=none
-			}
-			Facter=$(GetFacter)
+       
+	                if [ $UbuntuMajorVersion -ge 18 ]
+                        then
+                                function GetFacter {
+                                        facter virtual --log-level=none
+                                }
+                                Facter=$(GetFacter)
+                        else
+                                function GetFacter {
+                                        facter virtual
+                                }
+                                Facter=$(GetFacter)
+                        fi
 
 			if [ $Facter != 'physical' ] # 6
 			then
