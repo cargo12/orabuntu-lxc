@@ -41,7 +41,6 @@ Domain2=$4
 MultiHost=$5
 DistDir=$6
 Product=$7
-Domain1=$8
 
 echo ''
 echo "=============================================="
@@ -408,10 +407,10 @@ then
 	sudo service systemd-resolved restart
 fi
 
-ping -c 3 $SeedContainerName.$Domain2
+ping -c 3 $SeedContainerName
 
 function CheckNetworkUp {
-ping -c 3 $SeedContainerName.$Domain2 | grep packet | cut -f3 -d',' | sed 's/ //g'
+ping -c 3 $SeedContainerName | grep packet | cut -f3 -d',' | sed 's/ //g'
 }
 NetworkUp=$(CheckNetworkUp)
 n=1
