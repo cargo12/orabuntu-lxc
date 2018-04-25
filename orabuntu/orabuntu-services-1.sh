@@ -2210,7 +2210,7 @@ then
 		then
 			sudo sh -c "echo 'Type=idle'                   				>> /etc/systemd/system/$NameServer.service"
 		else
-			sudo sh -c "echo 'Type=idle'                   			>> /etc/systemd/system/$NameServer.service"
+			sudo sh -c "echo 'Type=oneshot'                   			>> /etc/systemd/system/$NameServer.service"
 		fi
 
 		sudo sh -c "echo 'User=root'                        				>> /etc/systemd/system/$NameServer.service"
